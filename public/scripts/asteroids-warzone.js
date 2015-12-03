@@ -219,7 +219,46 @@ function Projectile() {
 warpdrive.registerObject('Projectile', Projectile);
 
 function Asteroid() {
-    var self = warpdrive.instantiateObject('Rectangle');
+    var self = warpdrive.instantiateObject('MoveableVectorObject');
+
+    self.points = [
+        {
+            x: 25,
+            y: 100
+        },
+        {
+            x:0,
+            y:80
+        },
+        {
+            x:10,
+            y:25
+        },
+        {
+            x:40,
+            y:30
+        },
+        {
+            x:25,
+            y:0
+        },
+        {
+            x:75,
+            y:0
+        },
+        {
+            x:60,
+            y:60
+        },
+        {
+            x:100,
+            y:70
+        },
+        {
+            x:75,
+            y:100
+        }
+    ];
 
     self.handleCollision = function(sibling) {
         return false;
@@ -246,6 +285,15 @@ var bigBadAsteroid = warpdrive.create({
     width: 200
 });
 
+warpdrive.create({
+    type: 'Asteroid',
+    offsetX: 800,
+    offsetY: 300,
+    height: 100,
+    width: 100,
+    radians: 66 * Math.PI / 180
+});
+
 var keys = [];
 document.body.addEventListener("keydown", function(e) {
     keys[e.keyCode] = true;
@@ -263,12 +311,12 @@ document.body.addEventListener("keyup", function(e) {
 function checkKeyPressed() {
     //a
     if(keys[65]){
-        warpdrive.getObjectById(playerShip).thrust('left');
+        warpdrive.getObjectById(playerShip).turn(-1);
     }
 
     //d
     if(keys[68]){
-        warpdrive.getObjectById(playerShip).thrust('right');
+        warpdrive.getObjectById(playerShip).turn(1);
     }
 
     //s
@@ -283,12 +331,12 @@ function checkKeyPressed() {
 
     //e
     if(keys[69]) {
-        warpdrive.getObjectById(playerShip).turn(1);
+        warpdrive.getObjectById(playerShip).thrust('right');
     }
 
     //q
     if(keys[81]) {
-        warpdrive.getObjectById(playerShip).turn(-1);
+        warpdrive.getObjectById(playerShip).thrust('left');
     }
 
     //space

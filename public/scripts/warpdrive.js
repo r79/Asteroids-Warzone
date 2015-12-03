@@ -473,6 +473,17 @@ function WarpdriveObject(warpdriveInstance) {
         });
     }
 
+    function destroy() {
+        var parent = warpdriveInstance.getObjectById(self.parent);
+        var parentsChildArray = parent.childs;
+        parentsChildArray.splice(parentsChildArray.indexOf(self.id), 1);
+
+        delete warpdriveInstance.objects[self.id];
+
+        parent.render();
+    }
+    self.destroy = destroy;
+
     //updates the current position of the object
     function updatePosition() {
         if(self.id !== 'internal.god') {
@@ -734,31 +745,34 @@ function VectorObject(warpdriveInstance) {
 
     self.checkCollision = function checkCollision() {
         //if the current object collided into another object
-        if(warpdriveInstance.getObjectById(self.parent).childs.some(function (sibling) {
+        var collidedSibling = undefined;
+        wholeLoop:
+            for(var i = 0; i < warpdriveInstance.getObjectById(self.parent).childs.length; i++) {
+                var sibling = warpdriveInstance.getObjectById(self.parent).childs[i];
+
                 if(sibling === self.id) {
-                    return false;
+                    continue;
                 }
                 sibling = warpdriveInstance.getObjectById(sibling);
                 if(sibling.drawPoints) {
                     var collision = false;
-                    for(var i = 0; i < sibling.drawPoints.length - 1; i++) {
-                        if(self.checkCollisionFor(sibling.drawPoints[i])) {
-                            collision = true;
-                            break;
+                    for(var j = 0; j < sibling.drawPoints.length - 1; j++) {
+                        if(self.checkCollisionFor(sibling.drawPoints[j])) {
+                            collidedSibling = sibling;
+                            break wholeLoop;
                         }
                     }
-                    for(var i = 0; i < self.drawPoints.length - 1; i++) {
-                        if(sibling.checkCollisionFor(self.drawPoints[i])) {
-                            collision = true;
-                            break;
+                    for(var k = 0; k < self.drawPoints.length - 1; k++) {
+                        if(sibling.checkCollisionFor(self.drawPoints[k])) {
+                            collidedSibling = sibling;
+                            break wholeLoop;
                         }
                     }
-                    return collision;
-                } else {
-                    return false;
                 }
-            })) {
-            return self.handleCollision();
+            }
+
+        if(collidedSibling) {
+            return self.handleCollision(collidedSibling);
         } else {
             return false;
         }

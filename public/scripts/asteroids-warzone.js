@@ -1,16 +1,25 @@
 var warpdrive = new WarpdriveJS('game', window.innerWidth-4, window.innerHeight-4, '#555');
 
-var parentalQueryUpdate = warpdrive.query.update;
-warpdrive.query.update = function() {
-    checkKeyPressed();
-    for (var warpdriveObjectName in warpdrive.objects) {
-        var warpdriveObject = warpdrive.objects[warpdriveObjectName];
-        if(warpdriveObject.checkMovement) {
-            warpdriveObject.checkMovement();
+function OverwrittenQuery() {
+    var self = warpdrive.query;
+    self.lastUpdate = Date.now();
+
+    var parentalUpdate = self.update;
+    self.update = function () {
+        checkKeyPressed();
+        for (var warpdriveObjectName in warpdrive.objects) {
+            var warpdriveObject = warpdrive.objects[warpdriveObjectName];
+            if(warpdriveObject.checkMovement) {
+                warpdriveObject.checkMovement(self.lastUpdate);
+            }
         }
-    }
-    parentalQueryUpdate();
-};
+        parentalUpdate();
+        self.lastUpdate = Date.now();
+    };
+    return self;
+}
+
+warpdrive.query = new OverwrittenQuery();
 
 function MoveableVectorObject() {
     var self = warpdrive.instantiateObject('VectorObject');
@@ -28,34 +37,41 @@ function MoveableVectorObject() {
             left: false,
             right: false
         };
+        self.isTurning = 0;
         self.turnSpeed = self.turnSpeed || options.turnSpeed || 2;
     };
 
-    function applyThrust(radians) {
-        self.velocity.x += Math.cos(radians) * self.thrustValue;
-        self.velocity.y += Math.sin(radians) * self.thrustValue;
+    function applyThrust(radians, syncMultiplier) {
+        self.velocity.x += Math.cos(radians) * self.thrustValue * syncMultiplier;
+        self.velocity.y += Math.sin(radians) * self.thrustValue * syncMultiplier;
     }
 
     function relativeRadians(degrees) {
         return (self.radians / Math.PI * 180 + degrees) * Math.PI / 180;
     }
 
-    self.checkMovement = function () {
+    self.checkMovement = function (lastUpdate) {
+        var syncMultiplier = Number(Date.now() - lastUpdate) / (1000 / 60);
         if(self.isThrusting.forward){
-            applyThrust(self.radians);
+            applyThrust(self.radians, syncMultiplier);
             self.isThrusting.forward = false;
         }
         if(self.isThrusting.backwards) {
-            applyThrust(relativeRadians(180));
+            applyThrust(relativeRadians(180), syncMultiplier);
             self.isThrusting.backwards = false;
         }
         if(self.isThrusting.left) {
-            applyThrust(relativeRadians(-90));
+            applyThrust(relativeRadians(-90), syncMultiplier);
             self.isThrusting.left = false;
         }
         if(self.isThrusting.right) {
-            applyThrust(relativeRadians(90));
+            applyThrust(relativeRadians(90), syncMultiplier);
             self.isThrusting.right = false;
+        }
+
+        if(self.isTurning) {
+            self.changeRotation(self.turnSpeed * syncMultiplier * self.isTurning);
+            self.isTurning = 0;
         }
 
         if(self.velocity.x || self.velocity.y) {
@@ -63,7 +79,7 @@ function MoveableVectorObject() {
             self.velocity.x *= self.friction;
             self.velocity.y *= self.friction;
 
-            self.moveDistance(-self.velocity.x, -self.velocity.y);
+            self.moveDistance(-self.velocity.x * syncMultiplier, -self.velocity.y*syncMultiplier);
         }
     };
 
@@ -72,12 +88,13 @@ function MoveableVectorObject() {
     };
 
     self.turn = function(direction) {
-        self.changeRotation(self.turnSpeed * direction);
+        self.isTurning = direction;
     };
 
     return self;
 }
 warpdrive.registerObject('MoveableVectorObject', MoveableVectorObject);
+
 
 function Spaceship() {
     var self = warpdrive.instantiateObject('MoveableVectorObject');
@@ -96,9 +113,29 @@ function Spaceship() {
         }
     ];
 
+    self.handleCollision = function(sibling) {
+        switch(sibling.type) {
+            default:
+                self.destroy();
+                alert('you died');
+                return true;
+        }
+    };
+
     return self;
 }
 warpdrive.registerObject('Spaceship', Spaceship);
+
+function Asteroid() {
+    var self = warpdrive.instantiateObject('Rectangle');
+
+    self.handleCollision = function(sibling) {
+        return false;
+    };
+
+    return self;
+}
+warpdrive.registerObject('Asteroid', Asteroid);
 
 var spaceship = warpdrive.create({
     type: 'Spaceship',
@@ -109,7 +146,7 @@ var spaceship = warpdrive.create({
 });
 
 var bigBadAsteroid = warpdrive.create({
-    type: 'Rectangle',
+    type: 'Asteroid',
     offsetX: 100,
     offsetY: 100,
     height: 200,
@@ -129,12 +166,12 @@ document.body.addEventListener("keyup", function(e) {
 function checkKeyPressed() {
     //a
     if(keys[65]){
-        warpdrive.getObjectById(spaceship).turn(-1);
+        warpdrive.getObjectById(spaceship).thrust('left');
     }
 
     //d
     if(keys[68]){
-        warpdrive.getObjectById(spaceship).turn(1);
+        warpdrive.getObjectById(spaceship).thrust('right');
     }
 
     //s
@@ -149,11 +186,11 @@ function checkKeyPressed() {
 
     //e
     if(keys[69]) {
-        warpdrive.getObjectById(spaceship).thrust('right');
+        warpdrive.getObjectById(spaceship).turn(1);
     }
 
     //q
     if(keys[81]) {
-        warpdrive.getObjectById(spaceship).thrust('left');
+        warpdrive.getObjectById(spaceship).turn(-1);
     }
 }

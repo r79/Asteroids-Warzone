@@ -7,10 +7,11 @@ function OverwrittenQuery() {
     var parentalUpdate = self.update;
     self.update = function () {
         checkKeyPressed();
+        var syncMultiplier = Number(Date.now() - self.lastUpdate) / (1000 / 60);
         for (var warpdriveObjectName in warpdrive.objects) {
             var warpdriveObject = warpdrive.objects[warpdriveObjectName];
             if(warpdriveObject.checkMovement) {
-                warpdriveObject.checkMovement(self.lastUpdate);
+                warpdriveObject.checkMovement(syncMultiplier);
             }
         }
         parentalUpdate();
@@ -50,8 +51,7 @@ function MoveableVectorObject() {
         return (self.radians / Math.PI * 180 + degrees) * Math.PI / 180;
     }
 
-    self.checkMovement = function (lastUpdate) {
-        var syncMultiplier = Number(Date.now() - lastUpdate) / (1000 / 60);
+    self.checkMovement = function (syncMultiplier) {
         if(self.isThrusting.forward){
             applyThrust(self.radians, syncMultiplier);
             self.isThrusting.forward = false;
@@ -133,7 +133,7 @@ function Spaceship() {
 
     self.lastShot = 0;
     self.shoot = function () {
-        if(Number(Date.now() - self.lastShot) > 100) {
+        if(Number(Date.now() - self.lastShot) > 250) {
             warpdrive.create({
                 type: 'Projectile',
                 offsetX: self.drawPoints[0].x + 20 * Math.cos(self.radians),
@@ -172,7 +172,7 @@ function Projectile() {
         }
     ];
 
-    self.thrustValue = 10;
+    self.thrustValue = 20;
 
     var parentalHandleStyle = self.handleStyle;
     self.handleStyle = function (options, parent) {
@@ -196,8 +196,21 @@ function Projectile() {
         }
     };
 
-    self.checkMovement = function(lastUpdate) {
-        var syncMultiplier = Number(Date.now() - lastUpdate) / (1000 / 60);
+    self.distanceTraveled = 0;
+
+    self.checkMovement = function(syncMultiplier) {
+        var distance = {
+            x: -self.velocity.x * syncMultiplier,
+            y: -self.velocity.y * syncMultiplier
+        };
+
+        self.distanceTraveled += Math.sqrt(distance.x * distance.x + distance.y * distance.y);
+
+        if(self.distanceTraveled > 750) {
+            self.destroy();
+            return;
+        }
+
         self.moveDistance(-self.velocity.x * syncMultiplier, -self.velocity.y * syncMultiplier);
     };
 

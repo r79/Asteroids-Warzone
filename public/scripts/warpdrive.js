@@ -203,7 +203,11 @@ function Query(refreshTime) {
             changeObject = [changeObject];
         }
         if(changeQuery[tick]) {
-            changeQuery[tick] = changeQuery[tick].concat(changeObject);
+            changeObject.forEach(function(object) {
+                if(changeQuery.indexOf(object) < 0) {
+                    changeQuery[tick].push(object);
+                }
+            });
         } else {
             changeQuery[tick] = changeObject;
         }
@@ -658,12 +662,18 @@ function VectorObject(warpdriveInstance) {
     self.handlePoints = function handlePoints() {
         self.drawPoints = [];
         self.collisionFiels = [];
+        self.outerRadius = 0;
+
         for(var i = 0; i < self.points.length; i++) {
             var point = self.points[i];
             self.drawPoints[i] = {
                 x: self.positionX + self.width * point.x / 100,
                 y: self.positionY + self.height * point.y / 100
             };
+            var distanceFromCenter = Math.sqrt(point.x * point.x + point.y * point.y);
+            if(distanceFromCenter > self.outerRadius) {
+                self.outerRadius = distanceFromCenter;
+            }
         }
         self.updateDrawPoints();
     };
@@ -739,18 +749,28 @@ function VectorObject(warpdriveInstance) {
         return inside;
     };
 
+    self.collisionBoundaryHit = function (sibling) {
+        var x = sibling.centralPoint.x - self.centralPoint.x;
+        var y = sibling.centralPoint.y - self.centralPoint.y;
+
+        return !(Math.sqrt(x*x + y*y) < sibling.outerRadius - self.outerRadius);
+    };
+
     self.checkCollision = function checkCollision() {
         //if the current object collided into another object
         var collidedSibling = undefined;
+        var allreadyChecked = [];
+
         wholeLoop:
             for(var i = 0; i < warpdriveInstance.getObjectById(self.parent).childs.length; i++) {
                 var sibling = warpdriveInstance.getObjectById(self.parent).childs[i];
 
-                if(sibling === self.id) {
+                sibling = warpdriveInstance.getObjectById(sibling);
+
+                if(sibling.id === self.id || allreadyChecked.indexOf(sibling.id) > 0) {
                     continue;
                 }
-                sibling = warpdriveInstance.getObjectById(sibling);
-                if(sibling.drawPoints) {
+                if(sibling.drawPoints && self.collisionBoundaryHit(sibling)) {
                     var collision = false;
                     for(var j = 0; j < sibling.drawPoints.length - 1; j++) {
                         if(self.checkCollisionFor(sibling.drawPoints[j])) {
@@ -765,6 +785,7 @@ function VectorObject(warpdriveInstance) {
                         }
                     }
                 }
+                allreadyChecked.push(sibling.id);
             }
 
         if(collidedSibling) {

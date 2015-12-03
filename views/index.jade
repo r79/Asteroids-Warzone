@@ -1,5 +1,9 @@
 extends layout
 
+block resources
+  link(rel='stylesheet', href='/stylesheets/game.css')
+
 block content
-  h1 Asteroids: Warzone
-  p This page is work in progress. Head back on 5. of December to see more.
+  canvas(id='game')
+  script(src='/scripts/warpdrive.js')
+  script(src='/scripts/asteroids-warzone.js')

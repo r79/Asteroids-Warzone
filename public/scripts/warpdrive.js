@@ -1,9 +1,6 @@
 var WarpdriveJS = function (canvasId, width, height) {
     var self = this;
 
-    var canvas = window.document.getElementById(canvasId);
-    var ctx = canvas.getContext('2d');
-
     //this object holds the highest settings. If you want to delete it, make sure to set the selectorstuff somewhere else and change the reference.
     var surface = {
         width: width || window.innerWidth,
@@ -11,9 +8,6 @@ var WarpdriveJS = function (canvasId, width, height) {
         offsetX: 0,
         offsetY: 0
     };
-
-    canvas.width = surface.width;
-    canvas.height = surface.height;
 
     //holds all WarpdriveObjects
     var objects = {};
@@ -37,6 +31,8 @@ function Query() {
     // the lower dimension holds objects that need to be redrawed,
     // the upper one provides a deferring draw functionality.
     var changeQuery = [];
+
+    var ticksPerSecond = 0;
 
     //checks if there are changes in the current tick and draws them, then sets the next tick
     function update() {

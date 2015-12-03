@@ -115,16 +115,95 @@ function Spaceship() {
 
     self.handleCollision = function(sibling) {
         switch(sibling.type) {
+            case 'Projectile':
+                sibling.handleCollision(self);
+                break;
+
             default:
                 self.destroy();
-                alert('you died');
                 return true;
+        }
+    };
+
+    var parentalDestroy = self.destroy;
+    self.destroy = function () {
+        parentalDestroy();
+        alert('you died');
+    };
+
+    self.lastShot = 0;
+    self.shoot = function () {
+        if(Number(Date.now() - self.lastShot) > 100) {
+            warpdrive.create({
+                type: 'Projectile',
+                offsetX: self.drawPoints[0].x + 20 * Math.cos(self.radians),
+                offsetY: self.drawPoints[0].y + 20 * Math.sin(self.radians),
+                height: 10,
+                width: 10,
+                radians: self.radians
+            });
+            self.lastShot = Date.now();
         }
     };
 
     return self;
 }
 warpdrive.registerObject('Spaceship', Spaceship);
+
+function Projectile() {
+    var self = warpdrive.instantiateObject('MoveableVectorObject');
+
+    self.points = [
+        {
+            x:0,
+            y:0
+        },
+        {
+            x:100,
+            y:0
+        },
+        {
+            x:100,
+            y:100
+        },
+        {
+            x:0,
+            y:100
+        }
+    ];
+
+    self.thrustValue = 10;
+
+    var parentalHandleStyle = self.handleStyle;
+    self.handleStyle = function (options, parent) {
+        parentalHandleStyle(options, parent);
+
+        self.velocity.y = Math.sin(self.radians) * self.thrustValue;
+        self.velocity.x = Math.cos(self.radians) * self.thrustValue;
+    };
+
+    self.handleCollision = function (sibling) {
+        switch(sibling.type) {
+            case 'Spaceship':
+                if(sibling.id === 'playerShip') {
+                    return false;
+                }
+
+            case 'Asteroid':
+            default:
+                self.destroy();
+                sibling.destroy();
+        }
+    };
+
+    self.checkMovement = function(lastUpdate) {
+        var syncMultiplier = Number(Date.now() - lastUpdate) / (1000 / 60);
+        self.moveDistance(-self.velocity.x * syncMultiplier, -self.velocity.y * syncMultiplier);
+    };
+
+    return self;
+}
+warpdrive.registerObject('Projectile', Projectile);
 
 function Asteroid() {
     var self = warpdrive.instantiateObject('Rectangle');
@@ -137,8 +216,9 @@ function Asteroid() {
 }
 warpdrive.registerObject('Asteroid', Asteroid);
 
-var spaceship = warpdrive.create({
+var playerShip = warpdrive.create({
     type: 'Spaceship',
+    id: 'playerShip',
     offsetX: window.innerWidth / 2,
     offsetY: window.innerHeight / 2,
     height: 50,
@@ -156,6 +236,10 @@ var bigBadAsteroid = warpdrive.create({
 var keys = [];
 document.body.addEventListener("keydown", function(e) {
     keys[e.keyCode] = true;
+    //I need my damn ctrl r
+    if(e.keyCode < 90 && e.keyCode !== 82) {
+        e.preventDefault();
+    }
 });
 
 document.body.addEventListener("keyup", function(e) {
@@ -166,31 +250,36 @@ document.body.addEventListener("keyup", function(e) {
 function checkKeyPressed() {
     //a
     if(keys[65]){
-        warpdrive.getObjectById(spaceship).thrust('left');
+        warpdrive.getObjectById(playerShip).thrust('left');
     }
 
     //d
     if(keys[68]){
-        warpdrive.getObjectById(spaceship).thrust('right');
+        warpdrive.getObjectById(playerShip).thrust('right');
     }
 
     //s
     if(keys[83]) {
-        warpdrive.getObjectById(spaceship).thrust('backwards')
+        warpdrive.getObjectById(playerShip).thrust('backwards')
     }
 
     //w
     if(keys[87]) {
-        warpdrive.getObjectById(spaceship).thrust('forward');
+        warpdrive.getObjectById(playerShip).thrust('forward');
     }
 
     //e
     if(keys[69]) {
-        warpdrive.getObjectById(spaceship).turn(1);
+        warpdrive.getObjectById(playerShip).turn(1);
     }
 
     //q
     if(keys[81]) {
-        warpdrive.getObjectById(spaceship).turn(-1);
+        warpdrive.getObjectById(playerShip).turn(-1);
+    }
+
+    //space
+    if(keys[32]) {
+        warpdrive.getObjectById(playerShip).shoot();
     }
 }

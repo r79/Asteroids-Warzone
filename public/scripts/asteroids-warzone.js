@@ -1,4 +1,4 @@
-var warpdrive = new WarpdriveJS('game', window.innerWidth-4, window.innerHeight-4, '#555');
+var warpdrive = new WarpdriveJS('game', window.innerWidth-4, window.innerHeight-4, '#555', undefined, 1000/60);
 
 function OverwrittenQuery() {
     var self = warpdrive.query;
@@ -6,6 +6,8 @@ function OverwrittenQuery() {
 
     var parentalUpdate = self.update;
     self.update = function () {
+        //sync movements to 60 fps, so the physic-calculation is not bound to framerate
+        //TAKE THAT BETHESDA, I"M BETTER THAN UUU LULZ
         checkKeyPressed();
         var syncMultiplier = Number(Date.now() - self.lastUpdate) / (1000 / 60);
         for (var warpdriveObjectName in warpdrive.objects) {
@@ -133,7 +135,7 @@ function Spaceship() {
 
     self.lastShot = 0;
     self.shoot = function () {
-        if(Number(Date.now() - self.lastShot) > 250) {
+        if(Number(Date.now() - self.lastShot) > 100) {
             warpdrive.create({
                 type: 'Projectile',
                 offsetX: self.drawPoints[0].x + 20 * Math.cos(self.radians),
@@ -172,7 +174,7 @@ function Projectile() {
         }
     ];
 
-    self.thrustValue = 20;
+    self.thrustValue = 10;
 
     var parentalHandleStyle = self.handleStyle;
     self.handleStyle = function (options, parent) {
@@ -277,7 +279,7 @@ var playerShip = warpdrive.create({
     width: 100
 });
 
-var bigBadAsteroid = warpdrive.create({
+warpdrive.create({
     type: 'Asteroid',
     offsetX: 100,
     offsetY: 100,

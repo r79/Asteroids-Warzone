@@ -1,8 +1,5 @@
-var WarpdriveJS = function (canvasId, width, height, backgroundColor, backgroundImage, selectable, refreshTime) {
+var WarpdriveJS = function (width, height, backgroundColor, backgroundImage, selectable, refreshTime) {
     var self = this;
-
-    var canvas = window.document.getElementById(canvasId);
-    var ctx = canvas.getContext('2d');
 
     //this object holds the highest settings. If you want to delete it, make sure to set the selectorstuff somewhere else and change the reference.
     var surface = {
@@ -13,9 +10,6 @@ var WarpdriveJS = function (canvasId, width, height, backgroundColor, background
         selectorColor: '#FF0000',
         selectorSize: 10
     };
-
-    canvas.width = surface.width;
-    canvas.height = surface.height;
 
     //holds all WarpdriveObjects
     var objects = {};
@@ -48,8 +42,6 @@ var WarpdriveJS = function (canvasId, width, height, backgroundColor, background
     this.objects = objects;
     this.query = query;
     this.selector = selector;
-    this.ctx = ctx;
-    this.surface = surface;
 
     //public exposing
     this.getObjectById = getObjectById;
@@ -179,19 +171,29 @@ function Query(refreshTime) {
     // the upper one provides a deferring draw functionality.
     var changeQuery = [];
 
+    var ticksPerSecond = 0;
+
     //checks if there are changes in the current tick and draws them, then sets the next tick
     function update() {
         var currentChanges = changeQuery.shift();
         if(currentChanges) {
             while(currentChanges.length > 0) {
-                currentChanges.shift().redraw();
+                //TODO: send to client
+                currentChanges.shift();
             }
         }
-        setTimeout(self.update, refreshTime);
+        ticksPerSecond++;
+        setTimeout(self.update, 0);
     }
     self.update = update;
-    //starts the redrawing process. Put this in it's own function if you need to manually start and stop
-    setTimeout(self.update, refreshTime);
+    self.update();
+
+    function logTicksPerSec() {
+        console.log(ticksPerSecond);
+        ticksPerSecond = 0;
+    }
+
+    setInterval(logTicksPerSec, 1000);
 
     //requests a redraw for an object or an array of objects. By adding a tick variable, you can provide when this
     // shall be processed. This currently only gets used by images, which need to be preloaded before they can be drawn.
@@ -513,32 +515,6 @@ function WarpdriveObject(warpdriveInstance) {
         }
     }
 
-    function specificRedraw(){
-        //overwrite
-    }
-
-    function drawSelection(){
-        warpdriveInstance.ctx.strokeStyle = warpdriveInstance.surface.selectorColor;
-        warpdriveInstance.ctx.lineWidth = warpdriveInstance.surface.selectorSize;
-        warpdriveInstance.ctx.strokeRect(self.positionX, self.positionY, self.width, self.height);
-    }
-
-    //redraws the current object. Only should be called by the Query.
-    function redraw() {
-        //this save is just to make sure no style conflicts occur.
-        warpdriveInstance.ctx.save();
-        warpdriveInstance.ctx.fillStyle = self.color;
-
-        self.specificRedraw();
-
-        //draws the selection border
-        if(self.selected) {
-            self.drawSelection();
-        }
-
-        warpdriveInstance.ctx.restore();
-    }
-
     function handleCollision() {
         //overWrite
         return false;
@@ -596,15 +572,12 @@ function WarpdriveObject(warpdriveInstance) {
     //internal expose
     this.render = render;
     this.updatePosition = updatePosition;
-    this.redraw = redraw;
     this.changeRotation = changeRotation;
     this.positionX = self.positionX;
     this.positionY = self.positionY;
     this.height = self.height;
     this.width = self.width;
     this.childs = self.childs;
-    this.specificRedraw = specificRedraw;
-    this.drawSelection = drawSelection;
     this.regular = regular;
     this.child = child;
     this.handleStyle = handleStyle;
@@ -689,41 +662,6 @@ function VectorObject(warpdriveInstance) {
     self.updatePosition = function () {
         parentalUpdatePosition();
         self.handlePoints();
-    };
-
-    self.specificRedraw = function() {
-        warpdriveInstance.ctx.beginPath();
-        warpdriveInstance.ctx.moveTo(self.drawPoints[0].x, self.drawPoints[0].y);
-
-        for(var i = 1; i < self.drawPoints.length; i++) {
-            warpdriveInstance.ctx.lineTo(self.drawPoints[i].x, self.drawPoints[i].y);
-        }
-        warpdriveInstance.ctx.fill();
-
-        //outcomment to see collision fields
-        //for(var i = 1; i < self.drawPoints.length; i++) {
-        //    warpdriveInstance.ctx.beginPath();
-        //    warpdriveInstance.ctx.moveTo(self.centralPoint.x, self.centralPoint.y);
-        //    warpdriveInstance.ctx.lineTo(self.drawPoints[i].x, self.drawPoints[i].y);
-        //    warpdriveInstance.ctx.stroke();
-        //}
-    };
-
-    self.drawSelection = function () {
-        warpdriveInstance.ctx.strokeStyle = warpdriveInstance.surface.selectorColor;
-        warpdriveInstance.ctx.lineWidth = warpdriveInstance.surface.selectorSize;
-
-        warpdriveInstance.ctx.beginPath();
-        warpdriveInstance.ctx.moveTo(self.drawPoints[0].x, self.drawPoints[0].y);
-
-        for(var i = 1; i < self.drawPoints.length; i++) {
-            warpdriveInstance.ctx.lineTo(self.drawPoints[i].x, self.drawPoints[i].y);
-        }
-
-        //redrawing the first line for smoothing the first corner
-        warpdriveInstance.ctx.lineTo(self.drawPoints[1].x, self.drawPoints[1].y);
-
-        warpdriveInstance.ctx.stroke();
     };
 
     self.handleCollision = function handleCollision() {
@@ -859,11 +797,6 @@ function Text(warpdriveInstance) {
             return;
         }
     };
-
-    self.specificRedraw = function() {
-        warpdriveInstance.ctx.font = self.height + 'px ' + self.fontfamily;
-        warpdriveInstance.ctx.fillText(self.textValue, self.positionX, self.positionY, self.width);
-    };
     return self;
 }
 
@@ -890,18 +823,6 @@ function ImageObject(warpdriveInstance) {
         if(!prepareAndValidateImage(options)) {
             console.log('WarpdriveObject construction failed: Image object has none or a not valid image attribute\n' + JSON.stringify(options));
             return;
-        }
-    };
-
-    self.specificRedraw = function() {
-        //images behave a bit more special, as they only can get drawed when they are completely loaded.
-        //image.complete is not the safest function, but the easiest to use
-        if(self.image.complete) {
-            warpdriveInstance.ctx.drawImage(self.image, self.positionX, self.positionY, self.width, self.height);
-        } else {
-            //if the image hasn't been loaded yet, we draw a placeholder and defer the drawing for later.
-            warpdriveInstance.ctx.fillRect(self.positionX, self.positionY, self.width, self.height);
-            self.render(false, 10);
         }
     };
     return self;

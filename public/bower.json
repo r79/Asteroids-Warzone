@@ -1,0 +1,24 @@
+{
+  "name": "Asteroids Warzone",
+  "description": "",
+  "main": "scripts/asteroids-warzone.js",
+  "moduleType": [
+    "node"
+  ],
+  "authors": [
+    "r79"
+  ],
+  "license": "MIT",
+  "homepage": "play.asteroids.online",
+  "private": true,
+  "ignore": [
+    "**/.*",
+    "node_modules",
+    "bower_components",
+    "test",
+    "tests"
+  ],
+  "dependencies": {
+    "warpdriveJS": "warpdrive#^1.0.0"
+  }
+}

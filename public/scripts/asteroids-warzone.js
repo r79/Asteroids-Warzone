@@ -1,7 +1,7 @@
-var warpdrive = new WarpdriveJS('game', window.innerWidth-4, window.innerHeight-4, '#555');
+var warpdrive = new Warpdrive('game', window.innerWidth-4, window.innerHeight-4, '#555');
 
-function OverwrittenQuery() {
-    var self = warpdrive.query;
+function OverwrittenQueue() {
+    var self = warpdrive.queue;
     self.lastUpdate = Date.now();
 
     var parentalUpdate = self.update;
@@ -20,7 +20,7 @@ function OverwrittenQuery() {
     return self;
 }
 
-warpdrive.query = new OverwrittenQuery();
+warpdrive.queue = new OverwrittenQueue();
 
 function MoveableVectorObject() {
     var self = warpdrive.instantiateObject('VectorObject');

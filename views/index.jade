@@ -1,9 +1,15 @@
 extends layout
 
 block resources
-  link(rel='stylesheet', href='/stylesheets/game.css')
+  link(rel='stylesheet', href='/public/stylesheets/game.css')
 
 block content
   canvas(id='game')
-  script(src='/scripts/warpdrive.js')
-  script(src='/scripts/asteroids-warzone.js')
+
+  // bower:js
+  script(src='../public/bower_components/warpdriveJS/bin/warpdrive.js')
+  script(src='../public/scripts/asteroids-warzone.js')
+  // endbower
+
+  // bower:css
+  // endbower

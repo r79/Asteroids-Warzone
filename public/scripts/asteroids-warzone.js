@@ -88,6 +88,18 @@ function MoveableVectorObject() {
     };
 
     self.turn = function(direction) {
+        switch(direction) {
+            case 'left':
+                self.isTurning = -1;
+                break;
+
+            case 'right':
+                self.isTurning = 1;
+                break;
+
+            default:
+                console.log('ERROR: turn direction must be given as "left" or "right"');
+        }
         self.isTurning = direction;
     };
 
@@ -311,12 +323,12 @@ document.body.addEventListener("keyup", function(e) {
 function checkKeyPressed() {
     //a
     if(keys[65]){
-        warpdrive.getObjectById(playerShip).turn(-1);
+        warpdrive.getObjectById(playerShip).turn('left');
     }
 
     //d
     if(keys[68]){
-        warpdrive.getObjectById(playerShip).turn(1);
+        warpdrive.getObjectById(playerShip).turn('right');
     }
 
     //s

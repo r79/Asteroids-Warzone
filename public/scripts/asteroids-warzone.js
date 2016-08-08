@@ -1,4 +1,4 @@
-var warpdrive = new Warpdrive('game', window.innerWidth-4, window.innerHeight-4, '#555');
+var warpdrive = new Warpdrive('game', window.innerWidth-4, window.innerHeight-4, '#555', undefined, 1000/144);
 
 function OverwrittenQueue() {
     var self = warpdrive.queue;
@@ -15,6 +15,9 @@ function OverwrittenQueue() {
             }
         }
         parentalUpdate();
+        //LOGS FPS
+        // console.log("\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n");
+        // console.log(1000 / Number(Date.now() - self.lastUpdate));
         self.lastUpdate = Date.now();
     };
     return self;
@@ -144,13 +147,13 @@ function Spaceship() {
 
     self.lastShot = 0;
     self.shoot = function () {
-        if(Number(Date.now() - self.lastShot) > 200) {
+        if(Number(Date.now() - self.lastShot) > 100) {
             warpdrive.create({
                 type: 'Projectile',
                 offsetX: self.drawPoints[0].x + 20 * Math.cos(self.radians),
                 offsetY: self.drawPoints[0].y + 20 * Math.sin(self.radians),
-                height: 10,
-                width: 10,
+                height: 5,
+                width: 5,
                 radians: self.radians,
                 sticky: true
             });
@@ -184,7 +187,7 @@ function Projectile() {
         }
     ];
 
-    self.thrustValue = 30;
+    self.thrustValue = 15;
 
     var parentalHandleStyle = self.handleStyle;
     self.handleStyle = function (options, parent) {

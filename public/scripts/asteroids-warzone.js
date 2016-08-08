@@ -100,7 +100,6 @@ function MoveableVectorObject() {
             default:
                 console.log('ERROR: turn direction must be given as "left" or "right"');
         }
-        self.isTurning = direction;
     };
 
     return self;
@@ -145,14 +144,15 @@ function Spaceship() {
 
     self.lastShot = 0;
     self.shoot = function () {
-        if(Number(Date.now() - self.lastShot) > 250) {
+        if(Number(Date.now() - self.lastShot) > 200) {
             warpdrive.create({
                 type: 'Projectile',
                 offsetX: self.drawPoints[0].x + 20 * Math.cos(self.radians),
                 offsetY: self.drawPoints[0].y + 20 * Math.sin(self.radians),
                 height: 10,
                 width: 10,
-                radians: self.radians
+                radians: self.radians,
+                sticky: true
             });
             self.lastShot = Date.now();
         }
@@ -184,7 +184,7 @@ function Projectile() {
         }
     ];
 
-    self.thrustValue = 20;
+    self.thrustValue = 30;
 
     var parentalHandleStyle = self.handleStyle;
     self.handleStyle = function (options, parent) {
@@ -218,7 +218,7 @@ function Projectile() {
 
         self.distanceTraveled += Math.sqrt(distance.x * distance.x + distance.y * distance.y);
 
-        if(self.distanceTraveled > 750) {
+        if(self.distanceTraveled > 1000) {
             self.destroy();
             return;
         }
@@ -286,7 +286,8 @@ var playerShip = warpdrive.create({
     offsetX: window.innerWidth / 2,
     offsetY: window.innerHeight / 2,
     height: 50,
-    width: 100
+    width: 100,
+    sticky: true
 });
 
 var bigBadAsteroid = warpdrive.create({
